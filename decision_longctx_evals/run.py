@@ -77,6 +77,12 @@ def done_keys(out: Path) -> set[str]:
     return done
 
 
+def ends_with_newline(out: Path) -> bool:
+    with open(out, "rb") as f:
+        f.seek(-1, os.SEEK_END)
+        return f.read(1) == b"\n"
+
+
 def main(args) -> int:
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -88,6 +94,8 @@ def main(args) -> int:
 
     lock, failed_total = threading.Lock(), 0
     with open(out, "a", encoding="utf-8") as fh:
+        if fh.tell() and not ends_with_newline(out):         # start after a line cut short by an interrupted run
+            fh.write("\n")
         for label, load in groups:
             jobs = [j for j in load() if j["key"] not in done]
             if not jobs:
